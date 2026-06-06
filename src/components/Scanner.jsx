@@ -12,7 +12,6 @@ function Scanner({ data, setData }) {
   const startScan = async () => {
     setHasil(null);
     setScanning(true);
-
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
@@ -30,7 +29,9 @@ function Scanner({ data, setData }) {
         videoRef.current,
         (result, err) => {
           if (result) {
-            handleScan(result.getText());
+            const teks = result.getText();
+            const idBersih = teks.trim().toUpperCase().split("|")[0];
+            handleScan(idBersih);
             stopScan();
           }
         }
@@ -54,7 +55,7 @@ function Scanner({ data, setData }) {
   };
 
   const handleScan = (id) => {
-    const idBersih = id.trim().toUpperCase();
+    const idBersih = id.trim().toUpperCase().split("|")[0];
     if (!idBersih) return;
 
     const warga = data.find((w) => w.id === idBersih);
@@ -81,7 +82,7 @@ function Scanner({ data, setData }) {
 
   return (
     <div>
-      <h2>📷 Scanner Kupon</h2>
+      <h2>📷 Pemindai Kupon</h2>
 
       <p>Nama Petugas:</p>
       <input
@@ -115,7 +116,7 @@ function Scanner({ data, setData }) {
 
       <hr style={{ margin: "16px 0" }} />
 
-      <p>Atau input ID manual:</p>
+      <p>Atau masukkan ID manual:</p>
       <input
         value={inputId}
         onChange={(e) => setInputId(e.target.value.toUpperCase())}
@@ -128,26 +129,27 @@ function Scanner({ data, setData }) {
           {hasil.tipe === "valid" && (
             <div className="hasil-valid">
               <p>✅ VALID — Serahkan Daging!</p>
-              <p>Nama: {hasil.warga.nama}</p>
-              <p>Alamat: {hasil.warga.alamat}</p>
-              <p>Waktu: {hasil.waktu}</p>
+              <p><strong>Nama:</strong> {hasil.warga.nama}</p>
+              <p><strong>Alamat:</strong> {hasil.warga.alamat}</p>
+              <p><strong>Waktu:</strong> {hasil.waktu}</p>
+              <p><strong>Petugas:</strong> {petugas}</p>
             </div>
           )}
           {hasil.tipe === "sudah" && (
             <div className="hasil-sudah">
               <p>⚠️ Kupon sudah digunakan!</p>
-              <p>Nama: {hasil.warga.nama}</p>
-              <p>Waktu scan: {hasil.warga.waktuScan}</p>
-              <p>Petugas: {hasil.warga.petugasScan}</p>
+              <p><strong>Nama:</strong> {hasil.warga.nama}</p>
+              <p><strong>Waktu scan:</strong> {hasil.warga.waktuScan}</p>
+              <p><strong>Petugas:</strong> {hasil.warga.petugasScan}</p>
             </div>
           )}
           {hasil.tipe === "tidakAda" && (
             <div className="hasil-error">
               <p>❌ Kupon tidak terdaftar!</p>
-              <p>ID: {hasil.id}</p>
+              <p><strong>ID:</strong> {hasil.id}</p>
             </div>
           )}
-          <button onClick={() => setHasil(null)}>Scan Berikutnya</button>
+          <button onClick={() => setHasil(null)}>Pindai Berikutnya</button>
         </div>
       )}
     </div>
