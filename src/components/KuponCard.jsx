@@ -1,15 +1,14 @@
 import { useEffect, useRef } from "react";
+import qrcode from "qrcode";
 
-function QRCode({ value, size = 160 }) {
+function QRCanvas({ value, size = 160 }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
     if (!canvasRef.current) return;
-    import("qrcode").then((QR) => {
-      QR.toCanvas(canvasRef.current, value, {
-        width: size,
-        margin: 2,
-      });
+    qrcode.toCanvas(canvasRef.current, value, {
+      width: size,
+      margin: 2,
     });
   }, [value, size]);
 
@@ -17,10 +16,34 @@ function QRCode({ value, size = 160 }) {
 }
 
 function KuponCard({ data }) {
+  const downloadQR = (warga) => {
+    const canvas = document.getElementById("qr-" + warga.id);
+    if (!canvas) return;
+    const url = canvas.toDataURL("image/png");
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "kupon-" + warga.id + ".png";
+    a.click();
+  };
+
+  const kirimWA = (warga) => {
+    const pesan =
+      "Assalamualaikum " + warga.nama + ",%0A%0A" +
+      "Berikut kupon qurban digital Anda:%0A" +
+      "ID Kupon: " + warga.id + "%0A" +
+      "Alamat: " + warga.alamat + "%0A%0A" +
+      "Tunjukkan QR Code ini kepada panitia pada hari distribusi.%0A" +
+      "Waktu: 06.00 - 12.00 WIB%0A" +
+      "Lokasi: Halaman Masjid Taqwa Muhammadiyah%0A%0A" +
+      "Jazakallahu Khairan.";
+    const noHp = warga.noHp.replace(/^0/, "62");
+    window.open("https://wa.me/" + noHp + "?text=" + pesan, "_blank");
+  };
+
   return (
     <div>
       <h2>🎫 Kupon Penerima</h2>
-      <p>Tunjukkan QR Code ini kepada panitia</p>
+      <p>Download atau kirim kupon ke warga via WhatsApp</p>
 
       {data.length === 0 && <p>Belum ada data penerima</p>}
 
@@ -38,7 +61,10 @@ function KuponCard({ data }) {
             display: "inline-block",
             margin: "12px 0"
           }}>
-            <QRCode value={w.id} size={160} />
+            <canvas id={"qr-" + w.id} ref={(el) => {
+              if (!el) return;
+              qrcode.toCanvas(el, w.id, { width: 160, margin: 2 });
+            }} />
           </div>
 
           <div className="kupon-body">
@@ -54,6 +80,21 @@ function KuponCard({ data }) {
             <span className={w.status === "sudah" ? "badge-sudah" : "badge-belum"}>
               {w.status === "sudah" ? "✅ Sudah Diambil" : "⬜ Belum Diambil"}
             </span>
+          </div>
+
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <button
+              onClick={() => downloadQR(w)}
+              style={{ flex: 1, background: "#1a6b3a", fontSize: 12 }}
+            >
+              📥 Download QR
+            </button>
+            <button
+              onClick={() => kirimWA(w)}
+              style={{ flex: 1, background: "#25D366", fontSize: 12 }}
+            >
+              📤 Kirim WA
+            </button>
           </div>
         </div>
       ))}
