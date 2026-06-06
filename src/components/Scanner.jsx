@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { BrowserQRCodeReader } from "@zxing/library";
 
 function Scanner({ data, setData }) {
@@ -10,13 +10,14 @@ function Scanner({ data, setData }) {
   const readerRef = useRef(null);
 
   const startScan = async () => {
+    setHasil(null);
     setScanning(true);
     readerRef.current = new BrowserQRCodeReader();
     try {
       await readerRef.current.decodeFromVideoDevice(
         null,
         videoRef.current,
-        (result) => {
+        (result, err) => {
           if (result) {
             handleScan(result.getText());
             stopScan();
@@ -24,7 +25,7 @@ function Scanner({ data, setData }) {
         }
       );
     } catch (err) {
-      console.error(err);
+      console.error("Kamera error:", err);
       setScanning(false);
     }
   };
@@ -73,20 +74,37 @@ function Scanner({ data, setData }) {
         placeholder="Nama petugas"
       />
 
-      {/* KAMERA SCANNER */}
+      {/* TOMBOL KAMERA */}
       <div style={{ marginBottom: 10 }}>
         {!scanning ? (
-          <button onClick={startScan}>📷 Buka Kamera Scanner</button>
+          <button onClick={startScan}>
+            📷 Buka Kamera Scanner
+          </button>
         ) : (
-          <button onClick={stopScan}>❌ Tutup Kamera</button>
+          <button onClick={stopScan}>
+            ❌ Tutup Kamera
+          </button>
         )}
       </div>
 
-      {scanning && (
-        <div style={{ marginBottom: 16 }}>
-          <video ref={videoRef} style={{ width: "100%", borderRadius: 12 }} />
-        </div>
-      )}
+      {/* VIDEO KAMERA */}
+      <video
+        ref={videoRef}
+        autoPlay
+        muted
+        playsInline
+        style={{
+          width: "100%",
+          borderRadius: 12,
+          display: scanning ? "block" : "none",
+          minHeight: 250,
+          background: "#000",
+          marginBottom: 16,
+        }}
+      />
+
+      {/* GARIS PEMISAH */}
+      <hr style={{ margin: "16px 0" }} />
 
       {/* INPUT MANUAL */}
       <p>Atau input ID manual:</p>
@@ -95,11 +113,13 @@ function Scanner({ data, setData }) {
         onChange={(e) => setInputId(e.target.value.toUpperCase())}
         placeholder="KRB-1446-RT01-0001"
       />
-      <button onClick={() => handleScan(inputId)}>Verifikasi</button>
+      <button onClick={() => handleScan(inputId)}>
+        Verifikasi
+      </button>
 
-      {/* HASIL */}
+      {/* HASIL SCAN */}
       {hasil && (
-        <div>
+        <div style={{ marginTop: 16 }}>
           {hasil.tipe === "valid" && (
             <div className="hasil-valid">
               <p>✅ VALID — Serahkan Daging!</p>
@@ -113,6 +133,7 @@ function Scanner({ data, setData }) {
               <p>⚠️ Kupon sudah digunakan!</p>
               <p>Nama: {hasil.warga.nama}</p>
               <p>Waktu scan: {hasil.warga.waktuScan}</p>
+              <p>Petugas: {hasil.warga.petugasScan}</p>
             </div>
           )}
           {hasil.tipe === "tidakAda" && (
@@ -121,7 +142,9 @@ function Scanner({ data, setData }) {
               <p>ID: {hasil.id}</p>
             </div>
           )}
-          <button onClick={() => setHasil(null)}>Scan Berikutnya</button>
+          <button onClick={() => setHasil(null)}>
+            Scan Berikutnya
+          </button>
         </div>
       )}
     </div>
