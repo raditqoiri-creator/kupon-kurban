@@ -12,10 +12,21 @@ function Scanner({ data, setData }) {
   const startScan = async () => {
     setHasil(null);
     setScanning(true);
-    readerRef.current = new BrowserQRCodeReader();
+
     try {
-      await readerRef.current.decodeFromVideoDevice(
-        null,
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { exact: "environment" },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      });
+      videoRef.current.srcObject = stream;
+      await videoRef.current.play();
+
+      readerRef.current = new BrowserQRCodeReader();
+      readerRef.current.decodeFromStream(
+        stream,
         videoRef.current,
         (result, err) => {
           if (result) {
@@ -27,12 +38,17 @@ function Scanner({ data, setData }) {
     } catch (err) {
       console.error("Kamera error:", err);
       setScanning(false);
+      alert("Gagal membuka kamera: " + err.message);
     }
   };
 
   const stopScan = () => {
     if (readerRef.current) {
       readerRef.current.reset();
+    }
+    if (videoRef.current && videoRef.current.srcObject) {
+      videoRef.current.srcObject.getTracks().forEach((t) => t.stop());
+      videoRef.current.srcObject = null;
     }
     setScanning(false);
   };
@@ -74,20 +90,14 @@ function Scanner({ data, setData }) {
         placeholder="Nama petugas"
       />
 
-      {/* TOMBOL KAMERA */}
       <div style={{ marginBottom: 10 }}>
         {!scanning ? (
-          <button onClick={startScan}>
-            📷 Buka Kamera Scanner
-          </button>
+          <button onClick={startScan}>📷 Buka Kamera Scanner</button>
         ) : (
-          <button onClick={stopScan}>
-            ❌ Tutup Kamera
-          </button>
+          <button onClick={stopScan}>❌ Tutup Kamera</button>
         )}
       </div>
 
-      {/* VIDEO KAMERA */}
       <video
         ref={videoRef}
         autoPlay
@@ -103,21 +113,16 @@ function Scanner({ data, setData }) {
         }}
       />
 
-      {/* GARIS PEMISAH */}
       <hr style={{ margin: "16px 0" }} />
 
-      {/* INPUT MANUAL */}
       <p>Atau input ID manual:</p>
       <input
         value={inputId}
         onChange={(e) => setInputId(e.target.value.toUpperCase())}
         placeholder="KRB-1446-RT01-0001"
       />
-      <button onClick={() => handleScan(inputId)}>
-        Verifikasi
-      </button>
+      <button onClick={() => handleScan(inputId)}>Verifikasi</button>
 
-      {/* HASIL SCAN */}
       {hasil && (
         <div style={{ marginTop: 16 }}>
           {hasil.tipe === "valid" && (
@@ -142,9 +147,7 @@ function Scanner({ data, setData }) {
               <p>ID: {hasil.id}</p>
             </div>
           )}
-          <button onClick={() => setHasil(null)}>
-            Scan Berikutnya
-          </button>
+          <button onClick={() => setHasil(null)}>Scan Berikutnya</button>
         </div>
       )}
     </div>
