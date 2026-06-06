@@ -1,17 +1,49 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { BrowserQRCodeReader } from "@zxing/library";
+
 function Scanner({ data, setData }) {
   const [inputId, setInputId] = useState("");
   const [hasil, setHasil] = useState(null);
   const [petugas, setPetugas] = useState("Panitia 1");
+  const [scanning, setScanning] = useState(false);
+  const videoRef = useRef(null);
+  const readerRef = useRef(null);
 
-  const handleScan = () => {
-    const id = inputId.trim().toUpperCase();
-    if (!id) return;
+  const startScan = async () => {
+    setScanning(true);
+    readerRef.current = new BrowserQRCodeReader();
+    try {
+      await readerRef.current.decodeFromVideoDevice(
+        null,
+        videoRef.current,
+        (result) => {
+          if (result) {
+            handleScan(result.getText());
+            stopScan();
+          }
+        }
+      );
+    } catch (err) {
+      console.error(err);
+      setScanning(false);
+    }
+  };
 
-    const warga = data.find((w) => w.id === id);
+  const stopScan = () => {
+    if (readerRef.current) {
+      readerRef.current.reset();
+    }
+    setScanning(false);
+  };
+
+  const handleScan = (id) => {
+    const idBersih = id.trim().toUpperCase();
+    if (!idBersih) return;
+
+    const warga = data.find((w) => w.id === idBersih);
 
     if (!warga) {
-      setHasil({ tipe: "tidakAda", id });
+      setHasil({ tipe: "tidakAda", id: idBersih });
       return;
     }
 
@@ -22,7 +54,7 @@ function Scanner({ data, setData }) {
 
     const waktu = new Date().toLocaleString("id-ID");
     setData(data.map((w) =>
-      w.id === id
+      w.id === idBersih
         ? { ...w, status: "sudah", waktuScan: waktu, petugasScan: petugas }
         : w
     ));
@@ -41,14 +73,31 @@ function Scanner({ data, setData }) {
         placeholder="Nama petugas"
       />
 
-      <p>Input ID Kupon:</p>
+      {/* KAMERA SCANNER */}
+      <div style={{ marginBottom: 10 }}>
+        {!scanning ? (
+          <button onClick={startScan}>📷 Buka Kamera Scanner</button>
+        ) : (
+          <button onClick={stopScan}>❌ Tutup Kamera</button>
+        )}
+      </div>
+
+      {scanning && (
+        <div style={{ marginBottom: 16 }}>
+          <video ref={videoRef} style={{ width: "100%", borderRadius: 12 }} />
+        </div>
+      )}
+
+      {/* INPUT MANUAL */}
+      <p>Atau input ID manual:</p>
       <input
         value={inputId}
         onChange={(e) => setInputId(e.target.value.toUpperCase())}
         placeholder="KRB-1446-RT01-0001"
       />
-      <button onClick={handleScan}>Verifikasi</button>
+      <button onClick={() => handleScan(inputId)}>Verifikasi</button>
 
+      {/* HASIL */}
       {hasil && (
         <div>
           {hasil.tipe === "valid" && (
