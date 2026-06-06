@@ -1,4 +1,4 @@
-import QRCode from "qrcode.react";
+import { QRCodeSVG }from "qrcode.react";
 
 function KuponCard({ data }) {
   return (
